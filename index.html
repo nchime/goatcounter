@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoatCounter Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; font-size: 13px; }
+        .app { display: flex; flex-direction: column; height: 100vh; padding: 10px; gap: 10px; }
+
+        /* Header */
+        .header { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 8px; flex-shrink: 0; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header h1 { font-size: 1.1rem; font-weight: 600; }
+        .header-center { display: flex; align-items: center; gap: 8px; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .header-right input[type="date"] { padding: 5px 8px; border: none; border-radius: 4px; font-size: 12px; }
+        .header-right button { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; }
+        .header-right button:hover { background: rgba(255,255,255,0.35); }
+        .settings-btn { background: rgba(255,255,255,0.15) !important; }
+        .connection-badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.2); }
+
+        /* Date Presets */
+        .date-presets { display: flex; gap: 4px; background: rgba(0,0,0,0.1); padding: 3px; border-radius: 6px; }
+        .preset-btn { background: transparent; color: rgba(255,255,255,0.8); border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; transition: all 0.2s; }
+        .preset-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+        .preset-btn.active { background: white; color: #667eea; font-weight: 600; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; flex-shrink: 0; }
+        .tab-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 6px 16px; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 12px; font-weight: 500; }
+        .tab-btn.active { background: #f0f2f5; color: #333; border-color: #ddd; }
+
+        /* Stats Row */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; flex-shrink: 0; }
+        .stat-card { background: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 1.6rem; font-weight: 700; color: #333; margin-top: 2px; }
+
+        /* Tab Content */
+        .tab-content { display: none; flex: 1; min-height: 0; }
+        .tab-content.active { display: flex; flex-direction: column; }
+
+        /* Main Grid */
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr 300px; grid-template-rows: 1fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+
+        /* Panel */
+        .panel { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; flex-direction: column; overflow: hidden; }
+        .panel-header { padding: 8px 12px; font-weight: 600; font-size: 12px; color: #555; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+        .panel-body { flex: 1; min-height: 0; padding: 8px; }
+        .chart-container { width: 100%; height: 100%; }
+
+        /* Right Column */
+        .right-col { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 10px; }
+        .right-col .panel { flex: 1; min-height: 0; }
+        .list-items { overflow-y: auto; height: 100%; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; border-radius: 4px; font-size: 12px; position: relative; }
+        .list-item:hover { background: #f8f9fa; }
+        .list-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+        .list-item .count { font-weight: 600; color: #667eea; white-space: nowrap; }
+        .list-item .bar-bg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(102,126,234,0.06); border-radius: 4px; z-index: 0; }
+
+        /* Pages Tab */
+        .pages-grid { display: grid; grid-template-columns: 280px 1fr; gap: 10px; flex: 1; min-height: 0; }
+        .page-item { display: flex; align-items: center; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+        .page-item:hover { background: #f8f9fa; }
+        .page-item.active { background: #e8f0fe; border-left: 3px solid #667eea; }
+        .page-item .page-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .page-item .page-count { font-weight: 600; color: #667eea; margin-left: 8px; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 12px; padding: 24px; width: 420px; max-width: 90vw; }
+        .modal h3 { margin-bottom: 16px; font-size: 16px; }
+        .modal .form-group { margin-bottom: 12px; }
+        .modal .form-group label { display: block; margin-bottom: 4px; font-weight: 600; color: #555; font-size: 12px; }
+        .modal .form-group input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+        .modal-actions button { padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-secondary { background: #e9ecef; color: #333; }
+
+        /* Loading */
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.85); z-index: 999; justify-content: center; align-items: center; }
+        .loading-overlay.active { display: flex; }
+        .loading-box { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .loading-svg { width: 80px; height: 80px; }
+        .loading-text { font-size: 14px; color: #555; font-weight: 500; }
+
+        /* Error */
+        .error-bar { display: none; background: #f8d7da; color: #842029; padding: 8px 16px; border-radius: 6px; font-size: 12px; flex-shrink: 0; }
+        .error-bar.active { display: block; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            html, body { overflow: auto; }
+            .app { height: auto; min-height: 100vh; }
+            .header { flex-direction: column; gap: 10px; }
+            .header-left, .header-center, .header-right { width: 100%; justify-content: center; }
+            .date-presets { flex-wrap: wrap; justify-content: center; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .main-grid { grid-template-columns: 1fr; }
+            .right-col { grid-column: auto; grid-row: auto; }
+            .pages-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>GoatCounter Dashboard</h1>
+                <span id="connectionBadge" class="connection-badge"></span>
+            </div>
+            <div class="header-center">
+                <div class="date-presets">
+                    <button class="preset-btn" onclick="setPreset('today')">오늘</button>
+                    <button class="preset-btn" onclick="setPreset('yesterday')">어제</button>
+                    <button class="preset-btn active" onclick="setPreset('7d')">7일</button>
+                    <button class="preset-btn" onclick="setPreset('30d')">30일</button>
+                    <button class="preset-btn" onclick="setPreset('90d')">90일</button>
+                    <button class="preset-btn" onclick="setPreset('1y')">1년</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <input type="date" id="startDate">
+                <span>~</span>
+                <input type="date" id="endDate">
+                <button onclick="loadData()" id="loadBtn">조회</button>
+                <button class="settings-btn" onclick="openSettings()">설정</button>
+            </div>
+        </div>
+
+        <div id="errorBar" class="error-bar"></div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('overview')">메인 대시보드</button>
+            <button class="tab-btn" onclick="switchTab('pages')">페이지별 통계</button>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="stats-row">
+            <div class="stat-card"><div class="label">총 방문자</div><div class="value" id="totalVisitors">-</div></div>
+            <div class="stat-card"><div class="label">총 페이지뷰</div><div class="value" id="totalPageviews">-</div></div>
+            <div class="stat-card"><div class="label">일일 평균</div><div class="value" id="avgDaily">-</div></div>
+            <div class="stat-card"><div class="label">조회 기간</div><div class="value" id="periodDays">-</div></div>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div class="tab-content active" id="tab-overview">
+            <div class="main-grid">
+                <div class="panel">
+                    <div class="panel-header">일별 방문자 추이</div>
+                    <div class="panel-body"><div id="dailyChart" class="chart-container"></div></div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header">시간대별 방문자</div>
+                    <div class="panel-body"><div id="hourlyChart" class="chart-container"></div></div>
+                </div>
+                <div class="right-col">
+                    <div class="panel"><div class="panel-header">Top Referrers</div><div class="panel-body"><div id="referrersList" class="list-items"></div></div></div>
+                    <div class="panel"><div class="panel-header">브라우저</div><div class="panel-body"><div id="browsersList" class="list-items"></div></div></div>
+                    <div class="panel"><div class="panel-header">운영체제</div><div class="panel-body"><div id="systemsList" class="list-items"></div></div></div>
+                    <div class="panel"><div class="panel-header">지역</div><div class="panel-body"><div id="locationsList" class="list-items"></div></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Pages -->
+        <div class="tab-content" id="tab-pages">
+            <div class="pages-grid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>페이지 목록</span>
+                            <input type="text" id="pageSearch" placeholder="검색..." style="width:100px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;">
+                        </div>
+                    </div>
+                    <div class="panel-body" style="padding:0;"><div id="pagesListContainer" class="list-items"></div></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;min-height:0;">
+                    <div class="panel" style="flex:1;"><div class="panel-header" id="pageDetailTitle">페이지 시계열 통계</div><div class="panel-body"><div id="pageDailyChart" class="chart-container"></div></div></div>
+                    <div class="panel" style="flex:1;"><div class="panel-header">시간대별 방문자</div><div class="panel-body"><div id="pageHourlyChart" class="chart-container"></div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h3>API 설정</h3>
+            <div class="form-group"><label>API 키</label><input type="password" id="apiKey" placeholder="GoatCounter API 키"></div>
+            <div class="form-group"><label>사이트 코드</label><input type="text" id="siteCode" placeholder="예: nchime"></div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeSettings()">취소</button>
+                <button class="btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-box">
+            <svg class="loading-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="40" stroke="#e9ecef" stroke-width="8" fill="none"/>
+                <circle cx="50" cy="50" r="40" stroke="#667eea" stroke-width="8" fill="none" stroke-dasharray="200" stroke-dashoffset="60" stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate" values="0 50 50;360 50 50" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <text x="50" y="55" text-anchor="middle" fill="#667eea" font-size="14" font-weight="bold">GC</text>
+            </svg>
+            <div class="loading-text" id="loadingText">데이터 로드 중...</div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let config = { apiKey: '1nv7gnl3cpp241l472qr0i87du181f4jbljzg8klq7svexilain', siteCode: 'nchime' };
+        let chartInstances = {};
+        let pagesData = [];
+        let selectedPageId = null;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            setDefaultDates();
+            updateBadge();
+            window.addEventListener('resize', resizeCharts);
+            var ps = document.getElementById('pageSearch');
+            if (ps) ps.addEventListener('input', filterPages);
+            setTimeout(loadData, 300);
+        });
+
+        function setDefaultDates() {
+            var today = new Date();
+            var weekAgo = new Date();
+            weekAgo.setDate(today.getDate() - 6);
+            document.getElementById('startDate').value = fmt(weekAgo);
+            document.getElementById('endDate').value = fmt(today);
+        }
+
+        function fmt(d) { return d.toISOString().split('T')[0]; }
+
+        function setPreset(preset) {
+            var today = new Date();
+            var s = new Date(today);
+            var e = new Date(today);
+            document.querySelectorAll('.preset-btn').forEach(function(b) { b.classList.remove('active'); });
+            if (event && event.target) event.target.classList.add('active');
+
+            switch(preset) {
+                case 'yesterday': s.setDate(today.getDate()-1); e.setDate(today.getDate()-1); break;
+                case '7d': s.setDate(today.getDate()-6); break;
+                case '30d': s.setDate(today.getDate()-29); break;
+                case '90d': s.setDate(today.getDate()-89); break;
+                case '1y': s.setFullYear(today.getFullYear()-1); s.setDate(s.getDate()+1); break;
+            }
+            document.getElementById('startDate').value = fmt(s);
+            document.getElementById('endDate').value = fmt(e);
+        }
+
+        function loadConfig() {
+            var saved = localStorage.getItem('gc_config');
+            if (saved) { var s = JSON.parse(saved); config.apiKey = s.apiKey || config.apiKey; config.siteCode = s.siteCode || config.siteCode; }
+        }
+        function saveConfig() { localStorage.setItem('gc_config', JSON.stringify(config)); }
+        function updateBadge() { document.getElementById('connectionBadge').textContent = config.siteCode ? config.siteCode + '.goatcounter.com' : '미설정'; }
+
+        function openSettings() {
+            document.getElementById('apiKey').value = config.apiKey;
+            document.getElementById('siteCode').value = config.siteCode;
+            document.getElementById('settingsModal').classList.add('active');
+        }
+        function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+        function saveSettings() {
+            config.apiKey = document.getElementById('apiKey').value.trim();
+            config.siteCode = document.getElementById('siteCode').value.trim().replace(/\.goatcounter\.com$/i, '');
+            saveConfig(); updateBadge(); closeSettings();
+        }
+
+        function showLoading(v, text) {
+            document.getElementById('loadingOverlay').classList.toggle('active', v);
+            if (text) document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadBtn').disabled = v;
+        }
+        function showError(msg) { var b = document.getElementById('errorBar'); b.textContent = msg; b.classList.add('active'); }
+        function hideError() { document.getElementById('errorBar').classList.remove('active'); }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            if (tab === 'overview') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('tab-overview').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('tab-pages').classList.add('active');
+            }
+            setTimeout(resizeCharts, 100);
+        }
+
+        var delay = function(ms) { return new Promise(function(r) { setTimeout(r, ms); }); };
+        var API_DELAY = 350;
+
+        function apiFetch(endpoint, params) {
+            params = params || {};
+            var targetUrl = 'https://' + config.siteCode + '.goatcounter.com/api/v0' + endpoint;
+            var proxyUrl = new URL('/api/proxy', window.location.origin);
+            proxyUrl.searchParams.append('target', targetUrl);
+            Object.keys(params).forEach(function(k) {
+                if (params[k] !== undefined && params[k] !== null) proxyUrl.searchParams.append(k, params[k]);
+            });
+            console.log('[API]', endpoint, params);
+            return fetch(proxyUrl.toString(), { headers: { 'Authorization': 'Bearer ' + config.apiKey } })
+                .then(function(res) {
+                    if (!res.ok) return res.text().then(function(t) { throw new Error('API ' + res.status + ': ' + t); });
+                    return res.json();
+                })
+                .then(function(data) { console.log('[API Response]', endpoint, data); return data; });
+        }
+
+        function loadData() {
+            var startDate = document.getElementById('startDate').value;
+            var endDate = document.getElementById('endDate').value;
+            if (!config.apiKey || !config.siteCode) { showError('설정에서 API 키와 사이트 코드를 입력하세요.'); return; }
+            if (!startDate || !endDate) { showError('날짜를 선택하세요.'); return; }
+
+            var startISO = startDate + 'T00:00:00Z';
+            var endISO = endDate + 'T23:59:59Z';
+            var rangeParams = { start: startISO, end: endISO };
+
+            showLoading(true, '총 방문자 수 조회 중...');
+            hideError();
+
+            apiFetch('/stats/total', rangeParams)
+                .then(function(totalData) {
+                    renderSummary(totalData, startDate, endDate);
+                    renderDailyChart(totalData.stats || []);
+                    renderHourlyChart(totalData.stats || []);
+                    return delay(API_DELAY);
+                })
+                .then(function() { showLoading(true, '페이지별 통계 조회 중...'); return apiFetch('/stats/hits', Object.assign({}, rangeParams, { limit: 50 })); })
+                .then(function(hitsData) { pagesData = hitsData.hits || []; renderPagesList(); return delay(API_DELAY); })
+                .then(function() { showLoading(true, '브라우저 통계 조회 중...'); return apiFetch('/stats/browsers', Object.assign({}, rangeParams, { limit: 10 })); })
+                .then(function(d) { renderList('browsersList', d.stats || []); return delay(API_DELAY); })
+                .then(function() { showLoading(true, '운영체제 통계 조회 중...'); return apiFetch('/stats/systems', Object.assign({}, rangeParams, { limit: 10 })); })
+                .then(function(d) { renderList('systemsList', d.stats || []); return delay(API_DELAY); })
+                .then(function() { showLoading(true, '지역 통계 조회 중...'); return apiFetch('/stats/locations', Object.assign({}, rangeParams, { limit: 10 })); })
+                .then(function(d) { renderList('locationsList', d.stats || []); return delay(API_DELAY); })
+                .then(function() { showLoading(true, '추천 소스 조회 중...'); return apiFetch('/stats/toprefs', Object.assign({}, rangeParams, { limit: 10 })); })
+                .then(function(d) { renderList('referrersList', d.stats || []); })
+                .catch(function(err) { console.error('[Error]', err); showError('데이터 로드 실패: ' + err.message); })
+                .then(function() { showLoading(false); }); // finally 대체
+        }
+
+        function renderSummary(d, s, e) {
+            var total = d.total || 0;
+            var events = d.total_events || 0;
+            document.getElementById('totalVisitors').textContent = total.toLocaleString();
+            document.getElementById('totalPageviews').textContent = (events + total).toLocaleString();
+            var days = Math.ceil((new Date(e) - new Date(s)) / 86400000) + 1;
+            document.getElementById('periodDays').textContent = days + '일';
+            document.getElementById('avgDaily').textContent = days > 0 ? Math.round(total / days).toLocaleString() : '0';
+        }
+
+        function renderDailyChart(stats) {
+            var dom = document.getElementById('dailyChart');
+            if (chartInstances.daily) chartInstances.daily.dispose();
+            var chart = echarts.init(dom);
+            chartInstances.daily = chart;
+            var isMobile = window.innerWidth <= 768;
+            if (!stats || stats.length === 0) { chart.setOption({ graphic: { type: 'text', left: 'center', top: 'middle', style: { text: '데이터 없음', fontSize: 14, fill: '#999' } } }); return; }
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: isMobile ? 35 : 40, right: isMobile ? 10 : 16, top: 16, bottom: 30 },
+                xAxis: { type: 'category', data: stats.map(function(s) { return s.day; }), axisLabel: { fontSize: 10, rotate: stats.length > 14 ? 45 : 0 }, axisTick: { show: false } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } }, axisLabel: { fontSize: 10 } },
+                series: [{ type: 'line', data: stats.map(function(s) { return s.daily || 0; }), smooth: true, symbol: 'circle', symbolSize: 4, lineStyle: { color: '#667eea', width: 2 }, itemStyle: { color: '#667eea' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(102,126,234,0.25)' }, { offset: 1, color: 'rgba(102,126,234,0.02)' }] } } }]
+            });
+        }
+
+        function renderHourlyChart(stats) {
+            var dom = document.getElementById('hourlyChart');
+            if (chartInstances.hourly) chartInstances.hourly.dispose();
+            var chart = echarts.init(dom);
+            chartInstances.hourly = chart;
+            var hourly = new Array(24).fill(0);
+            stats.forEach(function(s) { if (s.hourly) s.hourly.forEach(function(v, i) { hourly[i] += v; }); });
+            var isMobile = window.innerWidth <= 768;
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: isMobile ? 35 : 40, right: isMobile ? 10 : 16, top: 16, bottom: 28 },
+                xAxis: { type: 'category', data: hourly.map(function(_, i) { return i + '시'; }), axisLabel: { fontSize: 10, interval: isMobile ? 3 : 0 }, axisTick: { show: false } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } }, axisLabel: { fontSize: 10 } },
+                series: [{ type: 'bar', data: hourly, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#764ba2' }, { offset: 1, color: '#667eea' }] }, borderRadius: [3, 3, 0, 0] }, barMaxWidth: 20 }]
+            });
+        }
+
+        function renderList(id, stats) {
+            var c = document.getElementById(id);
+            if (!stats || stats.length === 0) { c.innerHTML = '<div style="padding:12px;color:#999;font-size:12px;">데이터 없음</div>'; return; }
+            var max = Math.max.apply(null, stats.map(function(s) { return s.count || 0; }));
+            c.innerHTML = stats.map(function(s) {
+                var name = s.name || s.id || '알 수 없음';
+                var count = s.count || 0;
+                var pct = max > 0 ? (count / max * 100) : 0;
+                return '<div class="list-item"><div class="bar-bg" style="width:' + pct + '%"></div><span class="name" title="' + esc(name) + '">' + esc(name) + '</span><span class="count">' + count.toLocaleString() + '</span></div>';
+            }).join('');
+        }
+
+        function renderPagesList() {
+            var c = document.getElementById('pagesListContainer');
+            if (!pagesData || pagesData.length === 0) { c.innerHTML = '<div style="padding:16px;color:#999;text-align:center;">데이터 없음</div>'; return; }
+            var sorted = pagesData.slice().sort(function(a, b) { return (b.count || 0) - (a.count || 0); });
+            c.innerHTML = sorted.map(function(p) {
+                var path = p.path || '/';
+                var count = p.count || 0;
+                var pid = p.path_id || 0;
+                return '<div class="page-item' + (selectedPageId === pid ? ' active' : '') + '" onclick="selectPage(' + pid + ',\'' + esc(path).replace(/'/g, "\\'") + '\')"><span class="page-path">' + esc(path) + '</span><span class="page-count">' + count.toLocaleString() + '</span></div>';
+            }).join('');
+        }
+
+        function filterPages() {
+            var q = document.getElementById('pageSearch').value.toLowerCase();
+            document.querySelectorAll('.page-item').forEach(function(el) {
+                var path = el.querySelector('.page-path').textContent.toLowerCase();
+                el.style.display = path.indexOf(q) >= 0 ? 'flex' : 'none';
+            });
+        }
+
+        function selectPage(pathId, pathName) {
+            selectedPageId = pathId;
+            document.querySelectorAll('.page-item').forEach(function(el) {
+                el.classList.remove('active');
+                if (el.querySelector('.page-path').textContent === pathName) el.classList.add('active');
+            });
+            document.getElementById('pageDetailTitle').textContent = pathName;
+            var pageHits = pagesData.find(function(p) { return p.path === pathName; });
+            if (pageHits && pageHits.stats && pageHits.stats.length > 0) {
+                renderPageDailyChart(pageHits.stats, pathName);
+                renderPageHourlyChart(pageHits.stats, pathName);
+            } else {
+                renderEmptyChart('pageDailyChart', '데이터 없음');
+                renderEmptyChart('pageHourlyChart', '데이터 없음');
+            }
+        }
+
+        function renderPageDailyChart(stats, name) {
+            var dom = document.getElementById('pageDailyChart');
+            if (chartInstances.pageDaily) chartInstances.pageDaily.dispose();
+            var chart = echarts.init(dom);
+            chartInstances.pageDaily = chart;
+            var isMobile = window.innerWidth <= 768;
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: 40, right: 16, top: 16, bottom: 30 },
+                xAxis: { type: 'category', data: stats.map(function(s) { return s.day; }), axisLabel: { fontSize: 10, rotate: stats.length > 14 ? 45 : 0 }, axisTick: { show: false } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } }, axisLabel: { fontSize: 10 } },
+                series: [{ name: name, type: 'bar', data: stats.map(function(s) { return s.daily || 0; }), itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#667eea' }, { offset: 1, color: '#764ba2' }] }, borderRadius: [4, 4, 0, 0] }, barMaxWidth: 30 }]
+            });
+        }
+
+        function renderPageHourlyChart(stats, name) {
+            var dom = document.getElementById('pageHourlyChart');
+            if (chartInstances.pageHourly) chartInstances.pageHourly.dispose();
+            var chart = echarts.init(dom);
+            chartInstances.pageHourly = chart;
+            var hourly = new Array(24).fill(0);
+            stats.forEach(function(s) { if (s.hourly) s.hourly.forEach(function(v, i) { hourly[i] += v; }); });
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: 40, right: 16, top: 16, bottom: 30 },
+                xAxis: { type: 'category', data: hourly.map(function(_, i) { return i + '시'; }), axisLabel: { fontSize: 10 }, axisTick: { show: false } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } }, axisLabel: { fontSize: 10 } },
+                series: [{ name: name, type: 'line', data: hourly, smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: '#667eea', width: 2 }, itemStyle: { color: '#667eea' }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(102,126,234,0.3)' }, { offset: 1, color: 'rgba(102,126,234,0.02)' }] } } }]
+            });
+        }
+
+        function renderEmptyChart(id, msg) {
+            var dom = document.getElementById(id);
+            if (chartInstances[id]) chartInstances[id].dispose();
+            var chart = echarts.init(dom);
+            chartInstances[id] = chart;
+            chart.setOption({ graphic: { type: 'text', left: 'center', top: 'middle', style: { text: msg, fontSize: 14, fill: '#999' } } });
+        }
+
+        function resizeCharts() { Object.keys(chartInstances).forEach(function(k) { if (chartInstances[k]) chartInstances[k].resize(); }); }
+        function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    </script>
+</body>
+</html>

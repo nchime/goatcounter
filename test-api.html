@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>GoatCounter API 테스트</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+        .section { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; font-size: 12px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .result { margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 4px; display: none; }
+        .error { background: #ffebee; }
+    </style>
+</head>
+<body>
+    <h1>GoatCounter API 테스트</h1>
+
+    <div class="section">
+        <h3>설정</h3>
+        <label>API 키: <input type="text" id="apiKey" value="1nv7gnl3cpp241l472qr0i87du181f4jbljzg8klq7svexilain" style="width:400px;"></label><br>
+        <label>사이트 코드: <input type="text" id="siteCode" value="nchime"></label>
+    </div>
+
+    <div class="section">
+        <h3>API 테스트</h3>
+        <button onclick="testAPI('/stats/total')">stats/total 테스트</button>
+        <button onclick="testAPI('/stats/hits')">stats/hits 테스트</button>
+        <button onclick="testAPI('/stats/browsers')">stats/browsers 테스트</button>
+        <button onclick="testAPI('/stats/systems')">stats/systems 테스트</button>
+        <button onclick="testAPI('/stats/locations')">stats/locations 테스트</button>
+        <button onclick="testAPI('/stats/toprefs')">stats/toprefs 테스트</button>
+        <button onclick="testAPI('/paths')">paths 테스트</button>
+    </div>
+
+    <div class="section">
+        <h3>결과</h3>
+        <div id="result" class="result"></div>
+        <pre id="output">결과가 여기에 표시됩니다...</pre>
+    </div>
+
+    <script>
+        async function testAPI(endpoint) {
+            const apiKey = document.getElementById('apiKey').value;
+            const siteCode = document.getElementById('siteCode').value;
+            const resultDiv = document.getElementById('result');
+            const output = document.getElementById('output');
+
+            const today = new Date();
+            const weekAgo = new Date();
+            weekAgo.setDate(today.getDate() - 7);
+
+            const startISO = weekAgo.toISOString().split('T')[0] + 'T00:00:00Z';
+            const endISO = today.toISOString().split('T')[0] + 'T23:59:59Z';
+
+            const targetUrl = `https://${siteCode}.goatcounter.com/api/v0${endpoint}`;
+            const proxyUrl = new URL('/api/proxy', window.location.origin);
+            proxyUrl.searchParams.append('target', targetUrl);
+
+            // paths 엔드포인트에는 start/end가 필요 없음
+            if (endpoint !== '/paths') {
+                proxyUrl.searchParams.append('start', startISO);
+                proxyUrl.searchParams.append('end', endISO);
+            }
+
+            try {
+                const res = await fetch(proxyUrl.toString(), {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+
+                const text = await res.text();
+
+                // JSON 파싱 시도
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    // JSON이 아닌 경우 HTML 등
+                    data = { raw: text.substring(0, 500), isHTML: text.startsWith('<!DOCTYPE') || text.startsWith('<html') };
+                }
+
+                resultDiv.style.display = 'block';
+                if (data.isHTML) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `실패: ${endpoint} - JSON이 아닌 응답 (${res.status})`;
+                } else {
+                    resultDiv.className = 'result';
+                    resultDiv.textContent = `성공: ${endpoint} (${res.status})`;
+                }
+                output.textContent = JSON.stringify(data, null, 2);
+
+                console.log(`[API ${endpoint}]`, data);
+            } catch (err) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `실패: ${err.message}`;
+                output.textContent = err.stack;
+            }
+        }
+    </script>
+</body>
+</html>
