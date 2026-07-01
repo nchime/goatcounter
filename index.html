@@ -21,7 +21,31 @@
         .header-right button { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; }
         .header-right button:hover { background: rgba(255,255,255,0.35); }
         .settings-btn { background: rgba(255,255,255,0.15) !important; }
-        .connection-badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.2); }
+
+        /* Date Range Picker */
+        .date-range-picker { position: relative; }
+        .date-range-picker input { padding: 5px 10px; border: none; border-radius: 4px; font-size: 12px; width: 180px; cursor: pointer; background: white; color: #333; }
+        .date-picker-dropdown { display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; width: 280px; }
+        .date-picker-dropdown.active { display: block; }
+        .date-picker-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; }
+        .date-picker-header span { font-weight: 600; font-size: 13px; color: #333; }
+        .date-picker-header button { background: none; border: none; cursor: pointer; font-size: 16px; color: #667eea; padding: 4px 8px; border-radius: 4px; }
+        .date-picker-header button:hover { background: #f0f0f0; }
+        .date-picker-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; padding: 8px 12px 4px; font-size: 11px; color: #888; font-weight: 500; }
+        .date-picker-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; padding: 4px 12px 8px; gap: 2px; }
+        .date-picker-day { padding: 6px 0; font-size: 12px; cursor: pointer; border-radius: 4px; color: #333; }
+        .date-picker-day:hover { background: #f0f0f0; }
+        .date-picker-day.selected { background: #667eea; color: white; }
+        .date-picker-day.in-range { background: rgba(102,126,234,0.15); }
+        .date-picker-day.today { font-weight: 700; }
+        .date-picker-day.empty { cursor: default; }
+        .date-picker-day.empty:hover { background: none; }
+        .date-picker-actions { display: flex; justify-content: space-between; padding: 8px 12px; border-top: 1px solid #eee; }
+        .date-picker-actions button { padding: 5px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; }
+        .date-picker-actions .btn-primary { background: #667eea; color: white; }
+        .date-picker-actions .btn-primary:hover { background: #5a6fd6; }
+        .connection-badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; cursor: pointer; transition: background 0.2s; }
+        .connection-badge:hover { background: rgba(255,255,255,0.35); }
 
         /* Date Presets */
         .date-presets { display: flex; gap: 4px; background: rgba(0,0,0,0.1); padding: 3px; border-radius: 6px; }
@@ -31,8 +55,9 @@
 
         /* Tabs */
         .tabs { display: flex; gap: 4px; flex-shrink: 0; }
-        .tab-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 6px 16px; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 12px; font-weight: 500; }
-        .tab-btn.active { background: #f0f2f5; color: #333; border-color: #ddd; }
+        .tab-btn { background: #e0e0e0; color: #555; border: 1px solid #ccc; padding: 6px 16px; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; }
+        .tab-btn:hover { background: #d0d0d0; color: #333; }
+        .tab-btn.active { background: #f0f2f5; color: #333; border-color: #ddd; font-weight: 600; }
 
         /* Stats Row */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; flex-shrink: 0; }
@@ -45,7 +70,7 @@
         .tab-content.active { display: flex; flex-direction: column; }
 
         /* Main Grid */
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr 300px; grid-template-rows: 1fr 1fr; gap: 10px; flex: 1; min-height: 0; }
+        .main-grid { display: grid; grid-template-columns: 1fr 300px; grid-template-rows: 1fr 1fr; gap: 10px; flex: 1; min-height: 0; }
 
         /* Panel */
         .panel { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; flex-direction: column; overflow: hidden; }
@@ -54,7 +79,7 @@
         .chart-container { width: 100%; height: 100%; }
 
         /* Right Column */
-        .right-col { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 10px; }
+        .right-col { display: flex; flex-direction: column; gap: 10px; }
         .right-col .panel { flex: 1; min-height: 0; }
         .list-items { overflow-y: auto; height: 100%; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; border-radius: 4px; font-size: 12px; position: relative; }
@@ -98,14 +123,34 @@
         /* Responsive */
         @media (max-width: 768px) {
             html, body { overflow: auto; }
-            .app { height: auto; min-height: 100vh; }
-            .header { flex-direction: column; gap: 10px; }
+            .app { height: auto; min-height: 100vh; padding: 8px; gap: 8px; }
+            .header { flex-direction: column; gap: 8px; padding: 10px 12px; }
             .header-left, .header-center, .header-right { width: 100%; justify-content: center; }
+            .header-right { flex-wrap: wrap; }
+            .header-right input[type="text"] { flex: 1; min-width: 150px; }
+            .date-range-picker { flex: 1; }
+            .date-range-picker input { width: 100%; }
+            .date-picker-dropdown { width: 100%; left: 0; right: 0; }
             .date-presets { flex-wrap: wrap; justify-content: center; }
-            .stats-row { grid-template-columns: repeat(2, 1fr); }
-            .main-grid { grid-template-columns: 1fr; }
-            .right-col { grid-column: auto; grid-row: auto; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+            .stat-card { padding: 8px 10px; }
+            .stat-card .value { font-size: 1.2rem; }
+            .tabs { overflow-x: auto; }
+            .tab-btn { white-space: nowrap; padding: 6px 12px; font-size: 11px; }
+            .main-grid { grid-template-columns: 1fr; gap: 8px; }
+            .main-grid > div:first-child { min-height: 400px; }
+            .right-col { gap: 8px; }
+            .right-col .panel { min-height: 180px; }
+            .list-items { font-size: 11px; }
+            .list-item { padding: 4px 6px; }
             .pages-grid { grid-template-columns: 1fr; }
+            .pages-grid .panel:first-child { max-height: 250px; }
+            .page-item { padding: 6px 10px; }
+            .modal { width: 95vw; padding: 16px; }
+            .modal h3 { font-size: 14px; }
+            .modal .form-group input { font-size: 12px; }
+            .modal-actions { flex-direction: column; }
+            .modal-actions button { width: 100%; }
         }
     </style>
 </head>
@@ -115,7 +160,7 @@
         <div class="header">
             <div class="header-left">
                 <h1>GoatCounter Dashboard</h1>
-                <span id="connectionBadge" class="connection-badge"></span>
+                <a id="connectionBadge" class="connection-badge" href="#" target="_blank" rel="noopener noreferrer"></a>
             </div>
             <div class="header-center">
                 <div class="date-presets">
@@ -128,9 +173,24 @@
                 </div>
             </div>
             <div class="header-right">
-                <input type="date" id="startDate">
-                <span>~</span>
-                <input type="date" id="endDate">
+                <div class="date-range-picker">
+                    <input type="text" id="dateRangeDisplay" readonly placeholder="날짜 선택" onclick="toggleDatePicker()">
+                    <div class="date-picker-dropdown" id="datePickerDropdown">
+                        <div class="date-picker-header">
+                            <button onclick="changeMonth(-1)">&lt;</button>
+                            <span id="datePickerMonth"></span>
+                            <button onclick="changeMonth(1)">&gt;</button>
+                        </div>
+                        <div class="date-picker-weekdays">
+                            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                        </div>
+                        <div class="date-picker-days" id="datePickerDays"></div>
+                        <div class="date-picker-actions">
+                            <button onclick="clearDateRange()">초기화</button>
+                            <button class="btn-primary" onclick="applyDateRange()">적용</button>
+                        </div>
+                    </div>
+                </div>
                 <button onclick="loadData()" id="loadBtn">조회</button>
                 <button class="settings-btn" onclick="openSettings()">설정</button>
             </div>
@@ -155,13 +215,15 @@
         <!-- Tab: Overview -->
         <div class="tab-content active" id="tab-overview">
             <div class="main-grid">
-                <div class="panel">
-                    <div class="panel-header">일별 방문자 추이</div>
-                    <div class="panel-body"><div id="dailyChart" class="chart-container"></div></div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header">시간대별 방문자</div>
-                    <div class="panel-body"><div id="hourlyChart" class="chart-container"></div></div>
+                <div style="display:flex;flex-direction:column;gap:10px;min-height:0;">
+                    <div class="panel" style="flex:1;">
+                        <div class="panel-header">일별 방문자 추이</div>
+                        <div class="panel-body"><div id="dailyChart" class="chart-container"></div></div>
+                    </div>
+                    <div class="panel" style="flex:1;">
+                        <div class="panel-header">시간대별 방문자</div>
+                        <div class="panel-body"><div id="hourlyChart" class="chart-container"></div></div>
+                    </div>
                 </div>
                 <div class="right-col">
                     <div class="panel"><div class="panel-header">Top Referrers</div><div class="panel-body"><div id="referrersList" class="list-items"></div></div></div>
@@ -221,10 +283,11 @@
 
     <script>
         // State
-        let config = { apiKey: '1nv7gnl3cpp241l472qr0i87du181f4jbljzg8klq7svexilain', siteCode: 'nchime' };
+        let config = { apiKey: '', siteCode: '' };
         let chartInstances = {};
         let pagesData = [];
         let selectedPageId = null;
+        let datePickerState = { currentMonth: new Date().getMonth(), currentYear: new Date().getFullYear(), startDate: null, endDate: null, selecting: 'start' };
 
         // Init
         document.addEventListener('DOMContentLoaded', function() {
@@ -234,6 +297,12 @@
             window.addEventListener('resize', resizeCharts);
             var ps = document.getElementById('pageSearch');
             if (ps) ps.addEventListener('input', filterPages);
+            document.addEventListener('click', function(e) {
+                var picker = document.querySelector('.date-range-picker');
+                if (picker && !picker.contains(e.target)) {
+                    document.getElementById('datePickerDropdown').classList.remove('active');
+                }
+            });
             setTimeout(loadData, 300);
         });
 
@@ -241,8 +310,11 @@
             var today = new Date();
             var weekAgo = new Date();
             weekAgo.setDate(today.getDate() - 6);
-            document.getElementById('startDate').value = fmt(weekAgo);
-            document.getElementById('endDate').value = fmt(today);
+            datePickerState.startDate = weekAgo;
+            datePickerState.endDate = today;
+            datePickerState.currentMonth = today.getMonth();
+            datePickerState.currentYear = today.getFullYear();
+            updateDateDisplay();
         }
 
         function fmt(d) { return d.toISOString().split('T')[0]; }
@@ -261,8 +333,95 @@
                 case '90d': s.setDate(today.getDate()-89); break;
                 case '1y': s.setFullYear(today.getFullYear()-1); s.setDate(s.getDate()+1); break;
             }
-            document.getElementById('startDate').value = fmt(s);
-            document.getElementById('endDate').value = fmt(e);
+            datePickerState.startDate = s;
+            datePickerState.endDate = e;
+            datePickerState.currentMonth = today.getMonth();
+            datePickerState.currentYear = today.getFullYear();
+            updateDateDisplay();
+            loadData();
+        }
+
+        function toggleDatePicker() {
+            var dropdown = document.getElementById('datePickerDropdown');
+            dropdown.classList.toggle('active');
+            if (dropdown.classList.contains('active')) {
+                renderDatePicker();
+            }
+        }
+
+        function changeMonth(delta) {
+            datePickerState.currentMonth += delta;
+            if (datePickerState.currentMonth > 11) { datePickerState.currentMonth = 0; datePickerState.currentYear++; }
+            if (datePickerState.currentMonth < 0) { datePickerState.currentMonth = 11; datePickerState.currentYear--; }
+            renderDatePicker();
+        }
+
+        function renderDatePicker() {
+            var monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            document.getElementById('datePickerMonth').textContent = datePickerState.currentYear + '년 ' + monthNames[datePickerState.currentMonth];
+            
+            var firstDay = new Date(datePickerState.currentYear, datePickerState.currentMonth, 1).getDay();
+            var daysInMonth = new Date(datePickerState.currentYear, datePickerState.currentMonth + 1, 0).getDate();
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            var html = '';
+            for (var i = 0; i < firstDay; i++) { html += '<div class="date-picker-day empty"></div>'; }
+            
+            for (var d = 1; d <= daysInMonth; d++) {
+                var date = new Date(datePickerState.currentYear, datePickerState.currentMonth, d);
+                var classes = 'date-picker-day';
+                if (date.getTime() === today.getTime()) classes += ' today';
+                if (datePickerState.startDate && date.getTime() === datePickerState.startDate.getTime()) classes += ' selected';
+                if (datePickerState.endDate && date.getTime() === datePickerState.endDate.getTime()) classes += ' selected';
+                if (datePickerState.startDate && datePickerState.endDate && date > datePickerState.startDate && date < datePickerState.endDate) classes += ' in-range';
+                html += '<div class="' + classes + '" onclick="selectDate(' + d + ')">' + d + '</div>';
+            }
+            document.getElementById('datePickerDays').innerHTML = html;
+        }
+
+        function selectDate(day) {
+            var date = new Date(datePickerState.currentYear, datePickerState.currentMonth, day);
+            if (datePickerState.selecting === 'start') {
+                datePickerState.startDate = date;
+                datePickerState.endDate = null;
+                datePickerState.selecting = 'end';
+            } else {
+                if (date < datePickerState.startDate) {
+                    datePickerState.endDate = datePickerState.startDate;
+                    datePickerState.startDate = date;
+                } else {
+                    datePickerState.endDate = date;
+                }
+                datePickerState.selecting = 'start';
+            }
+            renderDatePicker();
+        }
+
+        function clearDateRange() {
+            datePickerState.startDate = null;
+            datePickerState.endDate = null;
+            datePickerState.selecting = 'start';
+            renderDatePicker();
+        }
+
+        function applyDateRange() {
+            if (datePickerState.startDate && datePickerState.endDate) {
+                updateDateDisplay();
+                document.getElementById('datePickerDropdown').classList.remove('active');
+                loadData();
+            }
+        }
+
+        function updateDateDisplay() {
+            var display = document.getElementById('dateRangeDisplay');
+            if (datePickerState.startDate && datePickerState.endDate) {
+                display.value = fmt(datePickerState.startDate) + ' ~ ' + fmt(datePickerState.endDate);
+            } else if (datePickerState.startDate) {
+                display.value = fmt(datePickerState.startDate) + ' ~ 선택하세요';
+            } else {
+                display.value = '날짜 선택';
+            }
         }
 
         function loadConfig() {
@@ -270,7 +429,7 @@
             if (saved) { var s = JSON.parse(saved); config.apiKey = s.apiKey || config.apiKey; config.siteCode = s.siteCode || config.siteCode; }
         }
         function saveConfig() { localStorage.setItem('gc_config', JSON.stringify(config)); }
-        function updateBadge() { document.getElementById('connectionBadge').textContent = config.siteCode ? config.siteCode + '.goatcounter.com' : '미설정'; }
+        function updateBadge() { var b = document.getElementById('connectionBadge'); if (config.siteCode) { b.textContent = config.siteCode + '.goatcounter.com'; b.href = 'https://' + config.siteCode + '.goatcounter.com'; } else { b.textContent = '미설정'; b.href = '#'; } }
 
         function openSettings() {
             document.getElementById('apiKey').value = config.apiKey;
@@ -326,13 +485,11 @@
         }
 
         function loadData() {
-            var startDate = document.getElementById('startDate').value;
-            var endDate = document.getElementById('endDate').value;
             if (!config.apiKey || !config.siteCode) { showError('설정에서 API 키와 사이트 코드를 입력하세요.'); return; }
-            if (!startDate || !endDate) { showError('날짜를 선택하세요.'); return; }
+            if (!datePickerState.startDate || !datePickerState.endDate) { showError('날짜를 선택하세요.'); return; }
 
-            var startISO = startDate + 'T00:00:00Z';
-            var endISO = endDate + 'T23:59:59Z';
+            var startISO = fmt(datePickerState.startDate) + 'T00:00:00Z';
+            var endISO = fmt(datePickerState.endDate) + 'T23:59:59Z';
             var rangeParams = { start: startISO, end: endISO };
 
             showLoading(true, '총 방문자 수 조회 중...');
@@ -340,7 +497,7 @@
 
             apiFetch('/stats/total', rangeParams)
                 .then(function(totalData) {
-                    renderSummary(totalData, startDate, endDate);
+                    renderSummary(totalData);
                     renderDailyChart(totalData.stats || []);
                     renderHourlyChart(totalData.stats || []);
                     return delay(API_DELAY);
@@ -359,12 +516,12 @@
                 .then(function() { showLoading(false); }); // finally 대체
         }
 
-        function renderSummary(d, s, e) {
+        function renderSummary(d) {
             var total = d.total || 0;
             var events = d.total_events || 0;
             document.getElementById('totalVisitors').textContent = total.toLocaleString();
             document.getElementById('totalPageviews').textContent = (events + total).toLocaleString();
-            var days = Math.ceil((new Date(e) - new Date(s)) / 86400000) + 1;
+            var days = Math.ceil((datePickerState.endDate - datePickerState.startDate) / 86400000) + 1;
             document.getElementById('periodDays').textContent = days + '일';
             document.getElementById('avgDaily').textContent = days > 0 ? Math.round(total / days).toLocaleString() : '0';
         }
@@ -491,6 +648,7 @@
         }
 
         function resizeCharts() { Object.keys(chartInstances).forEach(function(k) { if (chartInstances[k]) chartInstances[k].resize(); }); }
+        if (window.ResizeObserver) { var ro = new ResizeObserver(function() { resizeCharts(); }); document.querySelectorAll('.chart-container').forEach(function(el) { ro.observe(el); }); }
         function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
     </script>
 </body>
