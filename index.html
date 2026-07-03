@@ -26,6 +26,7 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
+        overflow: hidden;
         padding: 10px;
         gap: 10px;
       }
@@ -304,6 +305,7 @@
       .tab-content.active {
         display: flex;
         flex-direction: column;
+        overflow: hidden;
       }
 
       /* Main Grid */
@@ -1270,7 +1272,7 @@
 
       function loadData() {
         if (!config.apiKey || !config.siteCode) {
-          showError("설정에서 API 키와 사이트 코드를 입력하세요.");
+          openSettings();
           return;
         }
         if (!datePickerState.startDate || !datePickerState.endDate) {
